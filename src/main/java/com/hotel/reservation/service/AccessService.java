@@ -1,32 +1,31 @@
 package com.hotel.reservation.service;
 
 import com.hotel.reservation.model.Reservation;
+import com.hotel.reservation.model.ReservationStatus;
+import com.hotel.reservation.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Subsystem 5: simulated digital keys (UUID) for the reserved room. */
 @Service
 public class AccessService {
 
-    /** Active keys mapped to the room number they open. */
-    private final Map<String, String> activeKeys = new ConcurrentHashMap<>();
+    private final ReservationRepository reservationRepository;
+
+    public AccessService(ReservationRepository reservationRepository) {
+        this.reservationRepository = reservationRepository;
+    }
 
     public String generateDigitalKey(Reservation reservation) {
-        String key = UUID.randomUUID().toString();
-        activeKeys.put(key, reservation.getRoom().getNumber());
-        return key;
+        return UUID.randomUUID().toString();
     }
 
-    public void revokeDigitalKey(String key) {
-        if (key != null) {
-            activeKeys.remove(key);
-        }
-    }
-
+    /** A key opens its room only while the guest is checked in; check-out deactivates it. */
     public boolean isKeyValid(String key, String roomNumber) {
-        return roomNumber.equals(activeKeys.get(key));
+        return reservationRepository.findByDigitalKey(key)
+                .filter(reservation -> reservation.getStatus() == ReservationStatus.CHECKED_IN)
+                .filter(reservation -> reservation.getRoom().getNumber().equals(roomNumber))
+                .isPresent();
     }
 }

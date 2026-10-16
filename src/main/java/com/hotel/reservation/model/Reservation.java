@@ -1,5 +1,21 @@
 package com.hotel.reservation.model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -7,22 +23,44 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "reservations")
 public class Reservation {
 
-    private final String id;
-    private final Guest guest;
-    private final Room room;
-    private final LocalDate checkInDate;
-    private final LocalDate checkOutDate;
-    private final int numberOfGuests;
-    private final BigDecimal lodgingCost;
-    private final LocalDateTime createdAt = LocalDateTime.now();
-    private final List<AddedService> services = new ArrayList<>();
+    @Id
+    private String id;
+
+    @Embedded
+    private Guest guest;
+
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "room_number")
+    private Room room;
+
+    private LocalDate checkInDate;
+    private LocalDate checkOutDate;
+    private int numberOfGuests;
+    private BigDecimal lodgingCost;
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "reservation_services", joinColumns = @JoinColumn(name = "reservation_id"))
+    @OrderColumn(name = "position")
+    private List<AddedService> services = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
     private ReservationStatus status = ReservationStatus.CONFIRMED;
+
     private String digitalKey;
     private LocalDateTime checkedInAt;
     private LocalDateTime checkedOutAt;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "invoice_number")
     private Invoice invoice;
+
+    protected Reservation() {
+    }
 
     public Reservation(String id, Guest guest, Room room, LocalDate checkInDate, LocalDate checkOutDate,
                        int numberOfGuests, BigDecimal lodgingCost) {
@@ -35,6 +73,7 @@ public class Reservation {
         this.lodgingCost = lodgingCost;
     }
 
+    @Transient
     public long getNights() {
         return ChronoUnit.DAYS.between(checkInDate, checkOutDate);
     }
@@ -43,14 +82,17 @@ public class Reservation {
         return checkInDate.isBefore(to) && from.isBefore(checkOutDate);
     }
 
+    @Transient
     public boolean isActive() {
         return status != ReservationStatus.CHECKED_OUT;
     }
 
+    @Transient
     public BigDecimal getServicesCost() {
-        return services.stream().map(AddedService::total).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return services.stream().map(AddedService::getTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    @Transient
     public BigDecimal getCurrentTotal() {
         return lodgingCost.add(getServicesCost());
     }

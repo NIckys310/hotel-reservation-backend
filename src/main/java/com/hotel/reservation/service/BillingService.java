@@ -4,6 +4,7 @@ import com.hotel.reservation.model.AddedService;
 import com.hotel.reservation.model.Invoice;
 import com.hotel.reservation.model.InvoiceLine;
 import com.hotel.reservation.model.Reservation;
+import com.hotel.reservation.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,18 +13,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** Subsystem 4: detailed invoice with a breakdown of lodging and extra services. */
 @Service
 public class BillingService {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private final AtomicInteger sequence = new AtomicInteger(1000);
     private final RateService rateService;
+    private final ReservationRepository reservationRepository;
 
-    public BillingService(RateService rateService) {
+    public BillingService(RateService rateService, ReservationRepository reservationRepository) {
         this.rateService = rateService;
+        this.reservationRepository = reservationRepository;
     }
 
     public Invoice generateInvoice(Reservation reservation) {
@@ -37,11 +38,11 @@ public class BillingService {
             lines.add(new InvoiceLine(concept, 1, rate, rate));
         }
         for (AddedService service : reservation.getServices()) {
-            String concept = "Servicio adicional: " + service.label();
-            lines.add(new InvoiceLine(concept, service.quantity(), service.unitPrice(), service.total()));
+            String concept = "Servicio adicional: " + service.getLabel();
+            lines.add(new InvoiceLine(concept, service.getQuantity(), service.getUnitPrice(), service.getTotal()));
         }
         BigDecimal servicesSubtotal = reservation.getServicesCost();
-        return new Invoice("FAC-" + sequence.incrementAndGet(), reservation.getId(), reservation.getGuest(),
+        return new Invoice("FAC-" + (1001 + reservationRepository.countByInvoiceIsNotNull()), reservation.getId(), reservation.getGuest(),
                 reservation.getRoom().getNumber(), reservation.getRoom().getType(), reservation.getNights(), lines,
                 reservation.getLodgingCost(), servicesSubtotal, reservation.getLodgingCost().add(servicesSubtotal),
                 LocalDateTime.now());

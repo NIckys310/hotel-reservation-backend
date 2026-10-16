@@ -69,6 +69,11 @@ public class HotelController {
         return hotelFacade.checkOut(reservationId);
     }
 
+    @PutMapping("/cancelar/{reservationId}")
+    public Reservation cancelReservation(@PathVariable String reservationId) {
+        return hotelFacade.cancelReservation(reservationId);
+    }
+
     @GetMapping("/reserva/{reservationId}")
     public Reservation getReservation(@PathVariable String reservationId) {
         return hotelFacade.getReservation(reservationId);

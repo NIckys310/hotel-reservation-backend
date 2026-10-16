@@ -65,7 +65,7 @@ class HotelFacadeTest {
         Reservation checkedOut = hotelFacade.checkOut(reservation.getId());
         assertEquals(ReservationStatus.CHECKED_OUT, checkedOut.getStatus());
         // 300 lodging + 50 spa + 45 breakfast (3 days) + 30 transfer
-        assertEquals(new BigDecimal("425.00"), checkedOut.getInvoice().total());
+        assertEquals(new BigDecimal("425.00"), checkedOut.getInvoice().getTotal());
     }
 
     @Test

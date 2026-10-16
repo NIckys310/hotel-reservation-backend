@@ -5,6 +5,7 @@ import com.hotel.reservation.exception.NotFoundException;
 import com.hotel.reservation.model.Room;
 import com.hotel.reservation.model.RoomStatus;
 import com.hotel.reservation.model.RoomType;
+import com.hotel.reservation.repository.ReservationRepository;
 import com.hotel.reservation.repository.RoomRepository;
 import org.springframework.stereotype.Service;
 
@@ -33,10 +34,7 @@ public class RoomService {
     }
 
     public boolean isAvailable(Room room, LocalDate checkIn, LocalDate checkOut) {
-        return reservationRepository.findAll().stream()
-                .filter(reservation -> reservation.isActive())
-                .filter(reservation -> reservation.getRoom().getNumber().equals(room.getNumber()))
-                .noneMatch(reservation -> reservation.overlaps(checkIn, checkOut));
+        return !reservationRepository.existsOverlapping(room.getNumber(), checkIn, checkOut);
     }
 
     /** Returns the rooms of the requested type (or all types when null), whether available or not. */

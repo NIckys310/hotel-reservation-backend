@@ -11,13 +11,15 @@ import com.hotel.reservation.model.ReservationStatus;
 import com.hotel.reservation.model.Room;
 import com.hotel.reservation.model.RoomType;
 import com.hotel.reservation.model.ServiceType;
+import com.hotel.reservation.exception.NotFoundException;
+import com.hotel.reservation.repository.ReservationRepository;
 import com.hotel.reservation.service.AccessService;
 import com.hotel.reservation.service.AdditionalServiceService;
 import com.hotel.reservation.service.BillingService;
 import com.hotel.reservation.service.RateService;
-import com.hotel.reservation.service.ReservationRepository;
 import com.hotel.reservation.service.RoomService;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -50,6 +52,7 @@ public class HotelFacade {
     }
 
     /** crearReserva(reservaDTO): checks availability, prices the stay and stores the reservation. */
+    @Transactional
     public synchronized Reservation createReservation(ReservationRequestDTO request) {
         Room room = roomService.reserveRoom(request.roomNumber(), request.checkIn(), request.checkOut(),
                 request.numberOfGuests());
@@ -63,18 +66,20 @@ public class HotelFacade {
     }
 
     /** agregarServicio(reservaId, tipoServicio). */
+    @Transactional
     public synchronized Reservation addService(String reservationId, ServiceType serviceType, Integer quantity) {
-        Reservation reservation = reservationRepository.findById(reservationId);
+        Reservation reservation = findReservation(reservationId);
         if (reservation.getStatus() == ReservationStatus.CHECKED_OUT) {
             throw new BusinessException("No se pueden agregar servicios a una reserva que ya hizo check-out");
         }
         additionalServiceService.addService(reservation, serviceType, quantity);
-        return reservation;
+        return reservationRepository.save(reservation);
     }
 
     /** realizarCheckIn(reservaId): marks the room as occupied and issues the digital key. */
+    @Transactional
     public synchronized Reservation checkIn(String reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId);
+        Reservation reservation = findReservation(reservationId);
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
             throw new BusinessException("La reserva " + reservation.getId() + " ya realizó el check-in");
         }
@@ -82,12 +87,13 @@ public class HotelFacade {
         reservation.setDigitalKey(accessService.generateDigitalKey(reservation));
         reservation.setCheckedInAt(LocalDateTime.now());
         reservation.setStatus(ReservationStatus.CHECKED_IN);
-        return reservation;
+        return reservationRepository.save(reservation);
     }
 
     /** realizarCheckOut(reservaId): charges extra services, generates the final invoice and releases the room. */
+    @Transactional
     public synchronized Reservation checkOut(String reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId);
+        Reservation reservation = findReservation(reservationId);
         if (reservation.getStatus() == ReservationStatus.CONFIRMED) {
             throw new BusinessException("Debe realizar el check-in antes del check-out");
         }
@@ -95,19 +101,24 @@ public class HotelFacade {
             throw new BusinessException("La reserva " + reservation.getId() + " ya realizó el check-out");
         }
         reservation.setInvoice(billingService.generateInvoice(reservation));
-        accessService.revokeDigitalKey(reservation.getDigitalKey());
         roomService.releaseRoom(reservation.getRoom());
         reservation.setCheckedOutAt(LocalDateTime.now());
         reservation.setStatus(ReservationStatus.CHECKED_OUT);
-        return reservation;
+        return reservationRepository.save(reservation);
     }
 
     public Reservation getReservation(String reservationId) {
-        return reservationRepository.findById(reservationId);
+        return findReservation(reservationId);
     }
 
     public List<Reservation> getAllReservations() {
-        return reservationRepository.findAllSorted();
+        return reservationRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    private Reservation findReservation(String reservationId) {
+        String id = reservationId == null ? "" : reservationId.trim().toUpperCase();
+        return reservationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("No existe una reserva con el código " + reservationId));
     }
 
     public List<RoomAvailabilityDTO> checkAvailability(LocalDate checkIn, LocalDate checkOut, RoomType type) {

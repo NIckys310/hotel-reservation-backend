@@ -69,6 +69,15 @@ class HotelFacadeTest {
     }
 
     @Test
+    void availabilityCanBeFilteredByNightlyPrice() {
+        LocalDate checkIn = nextLowSeasonDate();
+        var rooms = hotelFacade.checkAvailability(checkIn, checkIn.plusDays(2), null,
+                new BigDecimal("120"), new BigDecimal("200"));
+        assertTrue(rooms.stream().allMatch(room -> room.type() == com.hotel.reservation.model.RoomType.DOUBLE));
+        assertTrue(!rooms.isEmpty());
+    }
+
+    @Test
     void overlappingReservationIsRejected() {
         LocalDate checkIn = nextLowSeasonDate().plusDays(5);
         hotelFacade.createReservation(new ReservationRequestDTO(

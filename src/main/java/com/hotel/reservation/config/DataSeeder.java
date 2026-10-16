@@ -3,12 +3,13 @@ package com.hotel.reservation.config;
 import com.hotel.reservation.model.Room;
 import com.hotel.reservation.model.RoomType;
 import com.hotel.reservation.repository.RoomRepository;
+import com.hotel.reservation.service.AuthService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/** Loads the 16 predefined rooms the first time the database is empty. */
+/** Loads the 16 predefined rooms and the demo user the first time the database is empty. */
 @Component
 public class DataSeeder implements CommandLineRunner {
 
@@ -23,9 +24,11 @@ public class DataSeeder implements CommandLineRunner {
                     "Minibar premium", "Cafetera Nespresso", "Batas y pantuflas", "Servicio de mayordomo");
 
     private final RoomRepository roomRepository;
+    private final AuthService authService;
 
-    public DataSeeder(RoomRepository roomRepository) {
+    public DataSeeder(RoomRepository roomRepository, AuthService authService) {
         this.roomRepository = roomRepository;
+        this.authService = authService;
     }
 
     @Override
@@ -33,6 +36,7 @@ public class DataSeeder implements CommandLineRunner {
         if (roomRepository.count() == 0) {
             roomRepository.saveAll(predefinedRooms());
         }
+        authService.createUserIfMissing("admin", "Recepción Hotel Fachada", "hotel123");
     }
 
     private static String image(String id) {

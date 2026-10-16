@@ -41,7 +41,10 @@ public class RateService {
             total = total.add(getNightlyRate(type, night));
         }
         BigDecimal highPrice = type.getBasePrice().multiply(Season.HIGH.getMultiplier()).setScale(2, RoundingMode.HALF_UP);
-        return new QuoteDTO(type, type.getLabel(), checkIn, checkOut, highNights + lowNights, highNights, lowNights,
-                type.getBasePrice(), highPrice, total.setScale(2, RoundingMode.HALF_UP));
+        long nights = highNights + lowNights;
+        BigDecimal average = nights == 0 ? BigDecimal.ZERO
+                : total.divide(BigDecimal.valueOf(nights), 2, RoundingMode.HALF_UP);
+        return new QuoteDTO(type, type.getLabel(), checkIn, checkOut, nights, highNights, lowNights,
+                type.getBasePrice(), highPrice, average, total.setScale(2, RoundingMode.HALF_UP));
     }
 }

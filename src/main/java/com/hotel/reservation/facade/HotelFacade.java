@@ -21,6 +21,7 @@ import com.hotel.reservation.service.RoomService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -121,7 +122,9 @@ public class HotelFacade {
                 .orElseThrow(() -> new NotFoundException("No existe una reserva con el código " + reservationId));
     }
 
-    public List<RoomAvailabilityDTO> checkAvailability(LocalDate checkIn, LocalDate checkOut, RoomType type) {
+    /** Price filters apply to the average nightly price of the stay (season surcharge included). */
+    public List<RoomAvailabilityDTO> checkAvailability(LocalDate checkIn, LocalDate checkOut, RoomType type,
+                                                       BigDecimal minPrice, BigDecimal maxPrice) {
         roomService.validateDates(checkIn, checkOut);
         return roomService.findRooms(type).stream()
                 .map(room -> new RoomAvailabilityDTO(room.getNumber(), room.getType(), room.getType().getLabel(),
@@ -129,6 +132,8 @@ public class HotelFacade {
                         room.getSizeM2(), room.getBedType(), room.getView(), room.getImageUrl(), room.getAmenities(),
                         roomService.isAvailable(room, checkIn, checkOut),
                         rateService.calculateQuote(room.getType(), checkIn, checkOut)))
+                .filter(room -> minPrice == null || room.quote().averageNightlyPrice().compareTo(minPrice) >= 0)
+                .filter(room -> maxPrice == null || room.quote().averageNightlyPrice().compareTo(maxPrice) <= 0)
                 .toList();
     }
 

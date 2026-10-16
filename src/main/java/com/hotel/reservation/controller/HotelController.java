@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -46,8 +47,10 @@ public class HotelController {
     public List<RoomAvailabilityDTO> checkAvailability(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
-            @RequestParam(required = false) RoomType type) {
-        return hotelFacade.checkAvailability(checkIn, checkOut, type);
+            @RequestParam(required = false) RoomType type,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice) {
+        return hotelFacade.checkAvailability(checkIn, checkOut, type, minPrice, maxPrice);
     }
 
     @PostMapping("/servicios/{reservationId}")

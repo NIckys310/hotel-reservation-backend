@@ -54,6 +54,7 @@ public class Reservation {
     private String digitalKey;
     private LocalDateTime checkedInAt;
     private LocalDateTime checkedOutAt;
+    private LocalDateTime cancelledAt;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "invoice_number")
@@ -84,7 +85,7 @@ public class Reservation {
 
     @Transient
     public boolean isActive() {
-        return status != ReservationStatus.CHECKED_OUT;
+        return status != ReservationStatus.CHECKED_OUT && status != ReservationStatus.CANCELLED;
     }
 
     @Transient
@@ -114,6 +115,8 @@ public class Reservation {
     public void setCheckedInAt(LocalDateTime checkedInAt) { this.checkedInAt = checkedInAt; }
     public LocalDateTime getCheckedOutAt() { return checkedOutAt; }
     public void setCheckedOutAt(LocalDateTime checkedOutAt) { this.checkedOutAt = checkedOutAt; }
+    public LocalDateTime getCancelledAt() { return cancelledAt; }
+    public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
     public Invoice getInvoice() { return invoice; }
     public void setInvoice(Invoice invoice) { this.invoice = invoice; }
 }

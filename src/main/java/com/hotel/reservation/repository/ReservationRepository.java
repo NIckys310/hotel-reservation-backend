@@ -20,7 +20,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, String
     @Query("""
             select count(r) > 0 from Reservation r
             where r.room.number = :roomNumber
-              and r.status <> com.hotel.reservation.model.ReservationStatus.CHECKED_OUT
+              and r.status not in (com.hotel.reservation.model.ReservationStatus.CHECKED_OUT,
+                                   com.hotel.reservation.model.ReservationStatus.CANCELLED)
               and r.checkInDate < :checkOut and :checkIn < r.checkOutDate
             """)
     boolean existsOverlapping(@Param("roomNumber") String roomNumber, @Param("checkIn") LocalDate checkIn,

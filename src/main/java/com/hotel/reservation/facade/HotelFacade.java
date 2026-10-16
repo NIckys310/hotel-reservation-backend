@@ -70,8 +70,8 @@ public class HotelFacade {
     @Transactional
     public synchronized Reservation addService(String reservationId, ServiceType serviceType, Integer quantity) {
         Reservation reservation = findReservation(reservationId);
-        if (reservation.getStatus() == ReservationStatus.CHECKED_OUT) {
-            throw new BusinessException("No se pueden agregar servicios a una reserva que ya hizo check-out");
+        if (!reservation.isActive()) {
+            throw new BusinessException("No se pueden agregar servicios a una reserva finalizada o cancelada");
         }
         additionalServiceService.addService(reservation, serviceType, quantity);
         return reservationRepository.save(reservation);
@@ -105,6 +105,18 @@ public class HotelFacade {
         roomService.releaseRoom(reservation.getRoom());
         reservation.setCheckedOutAt(LocalDateTime.now());
         reservation.setStatus(ReservationStatus.CHECKED_OUT);
+        return reservationRepository.save(reservation);
+    }
+
+    /** Cancels a reservation that has not checked in yet, releasing its dates for other guests. */
+    @Transactional
+    public synchronized Reservation cancelReservation(String reservationId) {
+        Reservation reservation = findReservation(reservationId);
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new BusinessException("Solo se pueden cancelar reservas que aún no han hecho check-in");
+        }
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setCancelledAt(LocalDateTime.now());
         return reservationRepository.save(reservation);
     }
 

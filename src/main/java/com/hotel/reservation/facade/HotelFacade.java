@@ -114,7 +114,8 @@ public class HotelFacade {
         roomService.validateDates(checkIn, checkOut);
         return roomService.findRooms(type).stream()
                 .map(room -> new RoomAvailabilityDTO(room.getNumber(), room.getType(), room.getType().getLabel(),
-                        room.getFloor(), room.getType().getCapacity(), room.getDescription(),
+                        room.getName(), room.getFloor(), room.getType().getCapacity(), room.getDescription(),
+                        room.getSizeM2(), room.getBedType(), room.getView(), room.getImageUrl(), room.getAmenities(),
                         roomService.isAvailable(room, checkIn, checkOut),
                         rateService.calculateQuote(room.getType(), checkIn, checkOut)))
                 .toList();
@@ -130,6 +131,6 @@ public class HotelFacade {
     }
 
     public List<Room> getAllRooms() {
-        return List.copyOf(roomService.getAllRooms());
+        return roomService.getAllRooms();
     }
 }
